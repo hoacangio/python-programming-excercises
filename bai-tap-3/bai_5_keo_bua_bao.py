@@ -9,43 +9,33 @@ moves = ['keo', 'bao', 'bua']
 def get_random_move():
     return random.choice(moves)
 
-def play(input1, input2):
-    if input1 == input2:
-        return 0
-
-    if (input1 == 'keo' and input2 == 'bao') or (input1 == 'bua' and input2 == 'keo') or (input1 == 'bao' and input2 == 'bua'):
-        return 1
-    else:
-        return 2
-
 """
 Hàm nhận vào 1 cặp đấu và tìm ra người thắng cuộc
 Nếu hòa thì sẽ chơi lại
 """
-def match(pairs):
-    player1, player2 = pairs
-
+def play(pair):
+    player1, player2 = pair
+    ## Nếu player2 là -1 thì player1 là người thắng cuộc
     if player2 == -1:
         return player1
 
+    input1 = get_random_move()
+    input2 = get_random_move()
+
     print(f'===Match: Player {player1} vs Player {player2}')
-    player1_move = get_random_move()
-    player2_move = get_random_move()
-    result = play(player1_move, player2_move)
 
-    while result == 0:
-        print("It's a tie! play again")
-        player1_move = get_random_move()
-        player2_move = get_random_move()
-        result = play(player1_move, player2_move)
+    while input1 == input2:
+        input1 = get_random_move()
+        input2 = get_random_move()
 
-    if result == 1:
-        print(f'Player {player1} wins!')
+    if (input1 == 'keo' and input2 == 'bao') or (input1 == 'bua' and input2 == 'keo') or (input1 == 'bao' and input2 == 'bua'):
+        print(f'{input1} vs {input2} => Player {player1} wins!')
+        print("===End Match\n", flush=True)
         return player1
-
-    print(f'Player {player2} wins!')
-    print("===End Match\n", flush=True)
-    return player2
+    else:
+        print(f'{input1} vs {input2} => Player {player2} wins!')
+        print("===End Match\n", flush=True)
+        return player2
 
 """
 Hàm chia cặp đấu, mảng các người chơi và tự chia cặp, nếu là số lẻ thì người chơi cuối sẽ cặp với -1
@@ -86,7 +76,7 @@ def league(number_of_players):
     while not (len(pairs) == 1 and pairs[-1][1] == -1):
         print("===================START ROUND=======================")
         print_pairs(pairs)
-        winners = [ match(pair) for pair in pairs ]
+        winners = [ play(pair) for pair in pairs ]
         pairs = get_pairs(winners)
         print("===================END ROUND=======================")
 
