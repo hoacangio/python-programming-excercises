@@ -6,6 +6,3 @@
 Mọi người nộp file py hoặc jupyter nhé. Mình sẽ tổng hợp lại và nộp.
 
 Đề bài ở đây nhé mọi người: https://docs.google.com/document/d/1qPZKx-AQYVShdh2xo9Y1eQNjikMynvIQ0dCMVR0aHrs/edit?usp=sharing
-
-
-25410216_25410245_25410207_25410205_25410225
