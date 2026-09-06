@@ -15,7 +15,7 @@ Các công việc được sắp xếp theo giai đoạn. Những mục trong c�
 
 - [ ] Quản trị dự án: lập kế hoạch, phân công nhiệm vụ và theo dõi deadline - Hòa
 - [ ] Thiết lập repository: tạo GitHub repository với cấu trúc thư mục - Hòa
-- [ ] Thiết lập môi trường cộng tác: kéo repository về máy local, đọc cấu trúc dự án và tài liệu hướng dẫn - Tất cả mọi người
+- [ ] Thiết lập môi trường cộng tác: kéo repository về máy local, đọc cấu trúc dự án và tài liệu hướng dẫn, chạy `streamlit run test_moi_truong.py` để xác nhận đã cài đặt môi trường thành công - Tất cả mọi người
 
 **Điều kiện hoàn thành:** Tất cả thành viên truy cập được repository, chạy được môi trường local và biết cách tạo branch/pull request.
 
