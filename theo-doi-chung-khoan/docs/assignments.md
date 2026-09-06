@@ -56,7 +56,7 @@ Các công việc được sắp xếp theo giai đoạn. Những mục trong c�
 
 ## Giai đoạn 5: Worker cảnh báo và tích hợp
 
-- [ ] Xây dựng alert worker: `process_price_alerts`, lấy alert active cùng `telegram_chat_id`, so sánh giá và chỉ tắt alert sau khi gửi thành công - **Hòa**
+- [ ] Xây dựng alert worker: `process_price_alerts`, lấy alert active cùng `telegram_chat_id`, so sánh giá và chỉ tắt alert sau khi gửi thành công - **Lợi**
 - [ ] Tích hợp Telegram và lịch chạy: gửi Bot API có timeout, tạo `alert_bot.py` độc lập với Streamlit và cấu hình Cronjob mỗi 5 phút - **Lợi**
 - [ ] Xây dựng và tích hợp biểu đồ: kết nối `build_candlestick_chart` với `get_price_history` và transaction repository - **Hiển**
 - [ ] Tích hợp toàn hệ thống vào Streamlit UI: kết nối các service, làm mới dữ liệu sau thao tác và hoàn thiện luồng người dùng - **Hòa**
@@ -65,9 +65,8 @@ Các công việc được sắp xếp theo giai đoạn. Những mục trong c�
 
 ## Giai đoạn 6: Kiểm thử và sửa lỗi
 
-- [ ] Viết và chạy unit test cho repository, market-data, transaction/portfolio và alert service - **Chị Hiền phối hợp cùng người phụ trách**
 - [ ] Kiểm thử tích hợp database, market data và Telegram mock - **Chị Hiền phối hợp cùng Hùng, Hiển và Lợi**
-- [ ] Kiểm thử giao diện trên luồng chính, ghi nhận kết quả và quay video - **Chị Hiền**
+- [ ] Kiểm thử giao diện trên luồng chính, ghi nhận kết quả và quay video - **Chị Hiền phối hợp cùng Hòa và Hiển**
 - [ ] Sửa lỗi và chạy regression test - **Người phụ trách chức năng phối hợp cùng Chị Hiền**
 
 **Điều kiện hoàn thành:** Các kịch bản bắt buộc đạt, lỗi đã ghi nhận có trạng thái xử lý và không có regression nghiêm trọng.
