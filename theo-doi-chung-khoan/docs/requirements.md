@@ -39,7 +39,7 @@ sequenceDiagram
     actor U as Người dùng
     participant ST as Streamlit Dashboard App
     participant SVC as Python Services
-    participant DB as Database (SQLite/PostgreSQL)
+    participant DB as Database (SQLite)
     participant EX_API as API Chứng khoán (yfinance)
     participant CRON as Background Worker (Script)
     participant B_API as Telegram Bot API
@@ -119,8 +119,7 @@ Các hàm bên dưới là service thuần Python, không import Streamlit và k
 
 ```sql
 -- 1. Bảng lưu trữ thông tin người dùng (và cấu hình Telegram)
--- Triển khai đầu tiên dùng SQLite. Nếu chuyển sang PostgreSQL,
--- schema phải được tạo qua SQLAlchemy models/migrations.
+-- Dùng SQLite; schema được tạo qua SQLAlchemy models/migrations.
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT, -- Cú pháp SQLite
     username VARCHAR(50) UNIQUE NOT NULL,

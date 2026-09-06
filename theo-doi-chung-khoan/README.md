@@ -28,7 +28,7 @@ cd theo-doi-chung-khoan
 cp .env.example .env
 ```
 
-Mở `.env` và điền `TELEGRAM_BOT_TOKEN` nếu muốn dùng tính năng cảnh báo qua Telegram. Mặc định `DATABASE_URL` dùng SQLite; nếu muốn dùng PostgreSQL (service `db` trong `docker-compose.yml`), đổi `DATABASE_URL` sang dòng `postgresql+psycopg2://...` đã có sẵn trong `.env.example`.
+Mở `.env` và điền `TELEGRAM_BOT_TOKEN` nếu muốn dùng tính năng cảnh báo qua Telegram. `DATABASE_URL` mặc định dùng SQLite (`sqlite:///data/portfolio.db`); file database nằm trong thư mục `data/` được mount vào container nên dữ liệu vẫn tồn tại sau khi `docker compose down`.
 
 ### 2.2 Build và chạy toàn bộ hệ thống
 
@@ -36,9 +36,8 @@ Mở `.env` và điền `TELEGRAM_BOT_TOKEN` nếu muốn dùng tính năng cả
 docker compose up --build
 ```
 
-Lệnh này khởi chạy 3 service:
+Lệnh này khởi chạy 2 service:
 
-- `db`: PostgreSQL (dùng khi `DATABASE_URL` trỏ sang PostgreSQL)
 - `app`: Streamlit dashboard, truy cập tại http://localhost:8501
 - `alert_bot`: worker quét cảnh báo giá, chạy độc lập với Streamlit
 
@@ -82,7 +81,7 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Khi chạy không dùng Docker, giữ `DATABASE_URL=sqlite:///data/portfolio.db` (mặc định) trừ khi bạn tự chạy PostgreSQL riêng.
+Khi chạy không dùng Docker, giữ `DATABASE_URL=sqlite:///data/portfolio.db` (mặc định); file SQLite sẽ được tạo trong thư mục `data/`.
 
 ### 3.4 Chạy ứng dụng
 
@@ -140,10 +139,11 @@ Nếu không hiển thị phiên bản, cài lại Streamlit:
 pip install streamlit
 ```
 
-### Lỗi: `app` không kết nối được `db` khi chạy Docker
+### Lỗi: `app` không ghi được database khi chạy Docker
 
-Kiểm tra `DATABASE_URL` trong `.env` đã trỏ đúng `db:5432` và service `db` đã `healthy`:
+Kiểm tra thư mục `data/` đã tồn tại và có quyền ghi (SQLite ghi file tại `/app/data/portfolio.db` trong container):
 
 ```bash
+mkdir -p data
 docker compose ps
 ```
