@@ -46,3 +46,9 @@ Xem hướng dẫn chi tiết (Docker và không Docker) tại [theo-doi-chung-k
 
 - MSSV: 25410216_25410245_25410207_25410205_25410225
 - Dự án: Python Programming Exercises + Theo dõi chứng khoán
+
+## Thông tin đồ án
+
+- Mục tiêu: Thực hành các kiến thức cơ bản về Python và xây dựng một ứng dụng theo dõi danh mục chứng khoán.
+- Deadline: chưa biết
+- Giáo viên hướng dẫn: Nghi Hoàng Khoa
