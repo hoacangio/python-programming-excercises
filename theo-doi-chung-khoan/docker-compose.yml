@@ -1,0 +1,49 @@
+services:
+  # PostgreSQL dùng khi DATABASE_URL trỏ sang postgresql (xem docs/requirements.md mục 4).
+  # Nếu chỉ chạy SQLite (mặc định trong .env.example) thì service này có thể bỏ qua/tắt.
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-portfolio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-portfolio}
+      POSTGRES_DB: ${POSTGRES_DB:-portfolio}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-portfolio}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Xem docs/requirements.md mục "Lưu ý kỹ thuật": alert_bot.py chạy độc lập,
+  # không import Streamlit. Bản đầu tiên dùng cron gọi mỗi 5 phút.
+  alert_bot:
+    build: .
+    command: ["python", "alert_bot.py"]
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db_data:

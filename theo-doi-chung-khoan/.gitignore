@@ -1,0 +1,9 @@
+# Environment variables (chứa TELEGRAM_BOT_TOKEN, DATABASE_URL,...)
+.env
+
+# SQLite database file và thư mục dữ liệu chạy local
+data/*.db
+data/*.sqlite3
+
+# Docker
+docker-compose.override.yml
