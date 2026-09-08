@@ -1,6 +1,5 @@
 # Phân công công việc
 
-
 ## Thành viên
 
 - Hòa
@@ -28,13 +27,13 @@ Các công việc được sắp xếp theo giai đoạn. Những mục trong c�
 
 **Điều kiện hoàn thành:** Schema, API nội bộ và tiêu chí kiểm thử được thống nhất trước khi chia code cho các nhóm chức năng.
 
-## Giai đoạn 3: Xây dựng nền tảng dùng chung
+## Giai đoạn 3: Xây dựng nền tảng dùng chung **(13/09/2026)**
 
 - [ ] Xây dựng nền tảng dữ liệu: cài đặt database, SQLAlchemy repository, schema, transaction và seed data cho user/transaction/price alert - **Hùng**
 
 **Điều kiện hoàn thành:** Repository có thể đọc/ghi database, transaction có commit/rollback và seed data chạy được.
 
-## Giai đoạn 4: Phát triển chức năng song song
+## Giai đoạn 4: Phát triển chức năng song song  **(16/09/2026)**
 
 ### Nhóm A: Dữ liệu thị trường
 
@@ -54,7 +53,7 @@ Các công việc được sắp xếp theo giai đoạn. Những mục trong c�
 
 **Điều kiện bắt đầu:** Giai đoạn 3 hoàn thành và các nhóm dùng đúng function contract đã chốt ở giai đoạn 2.
 
-## Giai đoạn 5: Worker cảnh báo và tích hợp
+## Giai đoạn 5: Worker cảnh báo và tích hợp **(19/09/2026)**
 
 - [ ] Xây dựng alert worker: `process_price_alerts`, lấy alert active cùng `telegram_chat_id`, so sánh giá và chỉ tắt alert sau khi gửi thành công - **Lợi**
 - [ ] Tích hợp Telegram và lịch chạy: gửi Bot API có timeout, tạo `alert_bot.py` độc lập với Streamlit và cấu hình Cronjob mỗi 5 phút - **Lợi**
@@ -63,17 +62,16 @@ Các công việc được sắp xếp theo giai đoạn. Những mục trong c�
 
 **Điều kiện hoàn thành:** Luồng thêm giao dịch, xem danh mục, đặt cảnh báo, xem biểu đồ và gửi Telegram chạy được từ đầu đến cuối.
 
-## Giai đoạn 6: Kiểm thử và sửa lỗi
+## Giai đoạn 6: Kiểm thử và sửa lỗi **(20/09/2026)**
 
 - [ ] Kiểm thử tích hợp database, market data và Telegram mock - **Chị Hiền phối hợp cùng Hùng, Hiển và Lợi**
 - [ ] Kiểm thử giao diện trên luồng chính, ghi nhận kết quả và quay video - **Chị Hiền phối hợp cùng Hòa và Hiển**
-- [ ] Sửa lỗi và chạy regression test - **Người phụ trách chức năng phối hợp cùng Chị Hiền**
+- [ ] Sửa lỗi - **Người phụ trách chức năng phối hợp cùng Chị Hiền**
 
 **Điều kiện hoàn thành:** Các kịch bản bắt buộc đạt, lỗi đã ghi nhận có trạng thái xử lý và không có regression nghiêm trọng.
 
-## Giai đoạn 7: Demo và bàn giao
+## Giai đoạn 7: Demo và bàn giao **(21/09/2026)**
 
-- [ ] Chuẩn bị dữ liệu demo và cấu hình mẫu - **Chị Hiền**
-- [ ] Hoàn thiện README và hướng dẫn cài đặt/chạy ứng dụng - **Hòa**
-- [ ] Cập nhật tài liệu requirements và tài liệu từng hàm - **Hòa**
-- [ ] Kiểm tra lại repository trước khi nộp - **Chị Hiền**
+- [ ] Chuẩn bị slide demo (5p) và kịch bản trình bày - **Chị Hiền, phối hợp cùng Hùng, Hiển, Lợi và Hòa**
+- [ ] Chuẩn bị dữ liệu demo (5p) và cấu hình mẫu - **Chị Hiền, phối hợp cùng Hùng, Hiển, Lợi và Hòa**
+- [ ] Kiểm tra lại repository trước khi nộp - **Hòa**
