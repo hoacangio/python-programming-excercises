@@ -7,3 +7,14 @@ data/*.sqlite3
 
 # Docker
 docker-compose.override.yml
+
+.venv/
+__pycache__/
+*.pyc
+
+.env
+
+data/*.db
+*.db
+
+.streamlit/secrets.toml
