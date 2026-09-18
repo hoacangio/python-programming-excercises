@@ -50,5 +50,5 @@ Xem hướng dẫn chi tiết (Docker và không Docker) tại [theo-doi-chung-k
 ## Thông tin đồ án
 
 - Mục tiêu: Thực hành các kiến thức cơ bản về Python và xây dựng một ứng dụng theo dõi danh mục chứng khoán.
-- Deadline: chưa biết
+- Deadline: 21/09/2026
 - Giáo viên hướng dẫn: Nghi Hoàng Khoa

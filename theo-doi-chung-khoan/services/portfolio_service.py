@@ -1,237 +1,167 @@
 # add_transaction, get_portfolio_summary.
 # Thiết kế: docs/functions/add_transaction.md, docs/functions/get_portfolio_summary.md.
 
-import sqlite3
+import logging
+from typing import Optional
+
 import pandas as pd
 
-DB_PATH = "data/portfolio.db"
+from repositories import transaction_repository, market_repository
+
+logger = logging.getLogger(__name__)
 
 
-def get_portfolio(user_id):
-    conn = sqlite3.connect(DB_PATH)
-
-    query = """
-        SELECT
-            symbol,
-
-            SUM(
-                CASE
-                    WHEN transaction_type = 'BUY'
-                    THEN quantity
-                    ELSE -quantity
-                END
-            ) AS quantity,
-
-            SUM(
-                CASE
-                    WHEN transaction_type = 'BUY'
-                    THEN quantity * price
-                    ELSE 0
-                END
-            ) AS total_buy_value,
-
-            SUM(
-                CASE
-                    WHEN transaction_type = 'BUY'
-                    THEN quantity
-                    ELSE 0
-                END
-            ) AS total_buy_quantity
-
-        FROM transactions
-
-        WHERE user_id = ?
-
-        GROUP BY symbol
+def add_transaction(
+    user_id: int,
+    symbol: str,
+    transaction_type: str,
+    quantity: int,
+    price: float,
+    notes: Optional[str] = None
+) -> int:
     """
-
-    df = pd.read_sql_query(
-        query,
-        conn,
-        params=(user_id,)
-    )
-
-    conn.close()
-
-    if df.empty:
-        return df
-
-    df["average_price"] = (
-        df["total_buy_value"]
-        / df["total_buy_quantity"]
-    )
-
-    df = df[df["quantity"] > 0]
-
-    return df
-def get_current_market_price(symbol):
-    conn = sqlite3.connect(DB_PATH)
-
-    cursor = conn.cursor()
-
-    cursor.execute(
-        """
-        SELECT close
-        FROM market_prices
-        WHERE symbol = ?
-        ORDER BY trade_date DESC
-        LIMIT 1
-        """,
-        (symbol,)
-    )
-
-    result = cursor.fetchone()
-
-    conn.close()
-
-    if result:
-        return float(result[0])
-
-    return 0
-import sqlite3
-import pandas as pd
-
-DB_PATH = "data/portfolio.db"
+    Thêm một giao dịch (BUY/SELL) cho người dùng.
+    
+    Validation được xử lý bởi Transaction model trong repository layer.
+    Repository cũng kiểm tra SELL không vượt quá số lượng sở hữu.
+    
+    Args:
+        user_id: ID người dùng
+        symbol: Mã cổ phiếu
+        transaction_type: 'BUY' hoặc 'SELL'
+        quantity: Số lượng (phải > 0)
+        price: Giá/cổ phiếu (phải > 0)
+        notes: Ghi chú tùy chọn
+    
+    Returns:
+        ID của giao dịch vừa thêm
+    
+    Raises:
+        ValueError: Nếu dữ liệu không hợp lệ (từ Transaction model hoặc DB-dependent)
+    """
+    try:
+        transaction_id = transaction_repository.add_transaction(
+            user_id=user_id,
+            symbol=symbol,
+            transaction_type=transaction_type,
+            quantity=int(quantity),
+            price=float(price),
+            notes=notes or ""
+        )
+        logger.info(
+            "Giao dịch thêm thành công: user_id=%s, symbol=%s, type=%s, qty=%s",
+            user_id, symbol, transaction_type, quantity
+        )
+        return transaction_id
+    except ValueError as e:
+        logger.warning("Dữ liệu giao dịch không hợp lệ: %s", e)
+        raise
+    except Exception as e:
+        logger.exception("Lỗi khi thêm giao dịch")
+        raise
 
 
-def get_current_market_price(symbol):
-    conn = sqlite3.connect(DB_PATH)
-
-    cursor = conn.cursor()
-
-    cursor.execute(
-        """
-        SELECT close
-        FROM market_prices
-        WHERE symbol = ?
-        ORDER BY trade_date DESC
-        LIMIT 1
-        """,
-        (symbol,)
-    )
-
-    row = cursor.fetchone()
-
-    conn.close()
-
-    return float(row[0]) if row else 0.0
-
-
-def get_portfolio_summary(user_id):
-    conn = sqlite3.connect(DB_PATH)
-
-    df = pd.read_sql_query(
-        """
-        SELECT
-            symbol,
-            transaction_type,
-            quantity,
-            price,
-            transaction_date,
-            id
-        FROM transactions
-        WHERE user_id = ?
-        ORDER BY transaction_date ASC, id ASC
-        """,
-        conn,
-        params=(user_id,)
-    )
-
-    conn.close()
-
-    if df.empty:
-        return pd.DataFrame()
-
-    portfolio = {}
-
-    for _, row in df.iterrows():
-
-        symbol = row["symbol"]
-        transaction_type = row["transaction_type"]
-
-        quantity = int(row["quantity"])
-        price = float(row["price"])
-
-        if symbol not in portfolio:
-            portfolio[symbol] = {
-                "quantity": 0,
-                "cost": 0.0,
-                "realized_profit": 0.0
-            }
-
-        item = portfolio[symbol]
-
-        # BUY
-        if transaction_type == "BUY":
-
-            item["cost"] += quantity * price
-            item["quantity"] += quantity
-
-        # SELL
-        elif transaction_type == "SELL":
-
-            if item["quantity"] <= 0:
-                continue
-
-            average_price = (
-                item["cost"] / item["quantity"]
-            )
-
-            realized_profit = (
-                price - average_price
-            ) * quantity
-
-            item["realized_profit"] += realized_profit
-
-            item["cost"] -= (
-                average_price * quantity
-            )
-
-            item["quantity"] -= quantity
-
+def get_portfolio_summary(user_id: int) -> pd.DataFrame:
+    """
+    Lấy tóm tắt danh mục hiện tại của người dùng.
+    
+    Tính toán từ lịch sử giao dịch (transactions) và giá thị trường hiện tại.
+    Với mỗi mã cổ phiếu đang sở hữu (quantity > 0), tính:
+    - Giá vốn trung bình
+    - Giá thị trường hiện tại
+    - Giá trị thị trường
+    - Lợi nhuận chưa nhận
+    - Tỷ lệ lợi nhuận (%)
+    - Lợi nhuận đã nhận
+    
+    Args:
+        user_id: ID người dùng
+    
+    Returns:
+        DataFrame với cột:
+        - symbol: Mã cổ phiếu
+        - quantity: Số lượng sở hữu
+        - average_price: Giá vốn trung bình
+        - current_price: Giá đóng cửa gần nhất
+        - cost_value: Tổng giá vốn
+        - market_value: Giá trị thị trường hiện tại (quantity * current_price)
+        - unrealized_profit: Lợi nhuận chưa nhận (market_value - cost_value)
+        - unrealized_percent: Tỷ lệ lợi nhuận chưa nhận (%)
+        - realized_profit: Lợi nhuận đã nhận từ SELL
+    """
+    # Lấy portfolio từ repository (chỉ tính từ transactions)
+    portfolio_dict = transaction_repository.get_portfolio(user_id)
+    
+    if not portfolio_dict:
+        # Trả về DataFrame rỗng theo schema
+        return pd.DataFrame(columns=[
+            "symbol", "quantity", "average_price", "current_price",
+            "cost_value", "market_value", "unrealized_profit",
+            "unrealized_percent", "realized_profit"
+        ])
+    
     result = []
-
-    for symbol, item in portfolio.items():
-
+    
+    for symbol, item in portfolio_dict.items():
         quantity = item["quantity"]
-
+        total_buy_value = item["total_buy_value"]
+        total_buy_quantity = item["total_buy_quantity"]
+        
+        # Bỏ qua nếu không sở hữu
         if quantity <= 0:
             continue
-
-        average_price = (
-            item["cost"] / quantity
-        )
-
-        current_price = get_current_market_price(symbol)
-
-        market_value = (
-            quantity * current_price
-        )
-
-        unrealized_profit = (
-            current_price - average_price
-        ) * quantity
-
-        unrealized_percent = (
-            unrealized_profit
-            / item["cost"]
-            * 100
-            if item["cost"] > 0
-            else 0
-        )
-
-        result.append(
-            {
-                "symbol": symbol,
-                "quantity": quantity,
-                "average_price": average_price,
-                "current_price": current_price,
-                "cost_value": item["cost"],
-                "market_value": market_value,
-                "unrealized_profit": unrealized_profit,
-                "unrealized_percent": unrealized_percent,
-                "realized_profit": item["realized_profit"]
-            }
-        )
-
-    return pd.DataFrame(result)
+        
+        # Tính giá vốn trung bình
+        if total_buy_quantity > 0:
+            average_price = total_buy_value / total_buy_quantity
+        else:
+            average_price = 0.0
+        
+        # Lấy giá thị trường hiện tại từ repository
+        try:
+            latest_df = market_repository.get_latest_price(symbol)
+            if latest_df.empty:
+                current_price = 0.0
+            else:
+                current_price = float(latest_df.iloc[0]["close"])
+        except Exception as e:
+            logger.warning("Không thể lấy giá hiện tại cho %s: %s", symbol, e)
+            current_price = 0.0
+        
+        # Tính giá trị thị trường
+        market_value = quantity * current_price
+        
+        # Tính lợi nhuận chưa nhận
+        unrealized_profit = market_value - total_buy_value
+        
+        # Tính tỷ lệ lợi nhuận
+        if total_buy_value > 0:
+            unrealized_percent = (unrealized_profit / total_buy_value) * 100
+        else:
+            unrealized_percent = 0.0
+        
+        # Lợi nhuận đã nhận (từ SELL)
+        realized_profit = item.get("realized_profit", 0.0)
+        
+        result.append({
+            "symbol": symbol,
+            "quantity": quantity,
+            "average_price": average_price,
+            "current_price": current_price,
+            "cost_value": total_buy_value,
+            "market_value": market_value,
+            "unrealized_profit": unrealized_profit,
+            "unrealized_percent": unrealized_percent,
+            "realized_profit": realized_profit
+        })
+    
+    if not result:
+        return pd.DataFrame(columns=[
+            "symbol", "quantity", "average_price", "current_price",
+            "cost_value", "market_value", "unrealized_profit",
+            "unrealized_percent", "realized_profit"
+        ])
+    
+    df = pd.DataFrame(result)
+    logger.info("Danh mục tóm tắt cho user_id=%s: %d mã", user_id, len(df))
+    return df

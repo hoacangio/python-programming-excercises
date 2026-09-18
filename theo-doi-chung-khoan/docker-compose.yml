@@ -1,28 +1,71 @@
-# Bản này chỉ dùng SQLite (mặc định trong .env.example: DATABASE_URL=sqlite:///data/portfolio.db).
-# File SQLite nằm trong ./data được mount vào /app/data nên dữ liệu tồn tại ngoài container.
+
 services:
+  # SQLite Database Service - Persistent data storage
+  # Volume mounts ./data so database persists across container restarts
+  db:
+    image: nouchka/sqlite3:latest
+    container_name: theo-doi-chung-khoan-db
+    volumes:
+      - ./data:/root
+    ports:
+      - "8765:8765"  # SQLite UI (optional, for inspecting database)
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "test", "-f", "/root/portfolio.db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Streamlit Application
   app:
     build: .
+    container_name: theo-doi-chung-khoan-app
     ports:
       - "8501:8501"
     env_file:
       - .env
     environment:
-      # Đảm bảo dùng SQLite ngay cả khi .env chưa khai báo DATABASE_URL.
+      # Note: .env file is optional; defaults are used if not present
+      # Use SQLite database from db service
       DATABASE_URL: ${DATABASE_URL:-sqlite:///data/portfolio.db}
+      # Streamlit config
+      STREAMLIT_SERVER_HEADLESS: "true"
+      STREAMLIT_SERVER_PORT: "8501"
+      STREAMLIT_SERVER_ADDRESS: "0.0.0.0"
     volumes:
       - ./data:/app/data
+      - ./:/app
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8501/_stcore/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Xem docs/requirements.md mục "Lưu ý kỹ thuật": alert_bot.py chạy độc lập,
-  # không import Streamlit. Bản đầu tiên dùng cron gọi mỗi 5 phút.
+  # Background Alert Bot Worker
+  # Runs independently to check price alerts and send notifications
+  # See docs/requirements.md "Lưu ý kỹ thuật": alert_bot.py is pure Python (no Streamlit)
   alert_bot:
     build: .
+    container_name: theo-doi-chung-khoan-alert-bot
     command: ["python", "alert_bot.py"]
     env_file:
       - .env
     environment:
       DATABASE_URL: ${DATABASE_URL:-sqlite:///data/portfolio.db}
+      # Add any additional alert bot config here
     volumes:
       - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
