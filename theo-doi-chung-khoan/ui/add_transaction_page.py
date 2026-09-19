@@ -2,6 +2,7 @@
 # Gọi bởi ui/main.py qua display_add_transaction_page()
 
 import streamlit as st
+import time
 
 from services.portfolio_service import add_transaction
 from services.dashboard_service import get_available_symbols
@@ -12,6 +13,10 @@ USER_ID = 1
 
 def display_add_transaction_page():
     """Render add transaction form page."""
+    # Initialize session state for transaction type if not exists
+    if "transaction_type" not in st.session_state:
+        st.session_state.transaction_type = "BUY"
+    
     st.subheader("➕ Thêm giao dịch")
     st.write("Nhập thông tin giao dịch mua/bán cổ phiếu")
     
@@ -25,15 +30,24 @@ def display_add_transaction_page():
         st.warning("Không có mã cổ phiếu nào. Vui lòng kiểm tra dữ liệu.")
         return
     
+    # Chọn loại giao dịch - OUTSIDE FORM to trigger immediate reload
+    st.subheader("Thông tin giao dịch")
+    transaction_type = st.radio(
+        "Loại giao dịch",
+        ["BUY", "SELL"],
+        horizontal=True,
+        key="transaction_type",
+        on_change=lambda: st.session_state.update({"transaction_type": st.session_state.transaction_type})
+    )
+    
+    # Show different info based on transaction type
+    if transaction_type == "BUY":
+        st.info("💰 Bạn đang thêm giao dịch MUA cổ phiếu")
+    else:
+        st.info("📤 Bạn đang thêm giao dịch BÁN cổ phiếu")
+    
     with st.form("transaction_form"):
-        st.subheader("Thông tin giao dịch")
-        
-        # Chọn loại giao dịch
-        transaction_type = st.radio(
-            "Loại giao dịch",
-            ["BUY", "SELL"],
-            horizontal=True
-        )
+        # Chọn mã cổ phiếu
         
         # Chọn mã cổ phiếu
         symbol = st.selectbox(
@@ -100,6 +114,9 @@ def display_add_transaction_page():
                     f"Loại: {transaction_type} | Mã: {symbol} | "
                     f"Số lượng: {quantity} | Giá: {price:,.0f} VND"
                 )
+                
+                # Wait 7 seconds before rerunning
+                time.sleep(7)
                 
                 # Reload page để cập nhật danh mục
                 st.rerun()

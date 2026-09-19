@@ -8,7 +8,7 @@ from typing import Optional
 import pandas as pd
 
 from repositories import alert_repository, user_repository
-from services import market_data_service
+from services import market_data_service, messaging_service
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +109,30 @@ def deactivate_price_alert(alert_id: int) -> None:
         raise
 
 
+def reactivate_price_alert(alert_id: int, user_id: int) -> None:
+    """
+    Kích hoạt lại một cảnh báo giá đã vô hiệu hóa.
+    
+    Người dùng chỉ có thể kích hoạt lại cảnh báo của chính họ (xác thực qua user_id).
+    
+    Args:
+        alert_id: ID cảnh báo
+        user_id: ID người dùng (để xác thực quyền sở hữu)
+    
+    Raises:
+        ValueError: Nếu alert_id không tồn tại hoặc không thuộc về user_id
+    """
+    try:
+        alert_repository.reactivate_price_alert(alert_id, user_id)
+        logger.info("Cảnh báo %s đã được kích hoạt lại cho user_id=%s", alert_id, user_id)
+    except ValueError as e:
+        logger.warning("Không thể kích hoạt lại cảnh báo: %s", e)
+        raise
+    except Exception as e:
+        logger.exception("Lỗi khi kích hoạt lại cảnh báo")
+        raise
+
+
 def process_price_alerts() -> dict:
     """
     Xử lý tất cả các cảnh báo giá đang hoạt động.
@@ -176,6 +200,11 @@ def process_price_alerts() -> dict:
                 try:
                     alert_repository.deactivate_price_alert(alert_id)
                     triggered_count += 1
+                    
+                    # Lấy thông tin người dùng để có telegram_chat_id
+                    user = user_repository.get_user(alert.user_id)
+                    telegram_chat_id = user.telegram_chat_id if user else None
+                    
                     triggered_alerts.append({
                         "alert_id": alert_id,
                         "symbol": symbol,
@@ -183,7 +212,8 @@ def process_price_alerts() -> dict:
                         "target_price": target_price,
                         "condition": condition,
                         "alert_type": alert.alert_type,
-                        "user_id": alert.user_id
+                        "user_id": alert.user_id,
+                        "telegram_chat_id": telegram_chat_id
                     })
                     logger.info(
                         "Cảnh báo %s được kích hoạt: %s @ %s (target: %s)",
@@ -192,10 +222,25 @@ def process_price_alerts() -> dict:
                 except Exception as e:
                     logger.exception("Lỗi khi vô hiệu hóa cảnh báo %s", alert_id)
         
+        # Gửi Telegram notifications cho tất cả cảnh báo được kích hoạt
+        messaging_result = None
+        if triggered_alerts:
+            try:
+                messaging_result = messaging_service.send_bulk_alert_notifications(triggered_alerts)
+                logger.info("Gửi Telegram notifications: %s", messaging_result)
+            except Exception as e:
+                logger.exception("Lỗi khi gửi Telegram notifications")
+        
         result = {
             "total_alerts": len(all_alerts),
             "triggered": triggered_count,
-            "details": triggered_alerts
+            "details": triggered_alerts,
+            "messaging": messaging_result or {
+                "total": 0,
+                "successful": 0,
+                "failed": 0,
+                "details": []
+            }
         }
         
         logger.info(

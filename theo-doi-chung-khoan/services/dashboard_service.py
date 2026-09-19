@@ -48,27 +48,3 @@ def get_market_data_for_symbol(symbol: str) -> pd.DataFrame:
     except Exception as e:
         logger.exception("Lỗi khi lấy dữ liệu giá cho %s", symbol)
         raise
-
-
-def get_latest_price_for_symbol(symbol: str) -> pd.DataFrame:
-    """
-    Lấy giá gần nhất của một mã cổ phiếu (1 dòng).
-    
-    Dùng bởi UI để hiển thị thông tin giá mới nhất (close, open, high, volume).
-    
-    Args:
-        symbol: Mã cổ phiếu
-    
-    Returns:
-        DataFrame với 1 dòng: symbol, trade_date, open, high, low, close, volume
-    """
-    try:
-        df = market_repository.get_latest_price(symbol)
-        if not df.empty:
-            logger.info("Lấy giá gần nhất cho %s: %s", symbol, df.iloc[0]["close"])
-        else:
-            logger.warning("Không tìm thấy dữ liệu giá cho %s", symbol)
-        return df
-    except Exception as e:
-        logger.exception("Lỗi khi lấy giá gần nhất cho %s", symbol)
-        raise

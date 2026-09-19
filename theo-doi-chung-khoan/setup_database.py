@@ -395,7 +395,7 @@ def seed_data():
         cursor.execute("""
             INSERT INTO users (username, telegram_chat_id)
             VALUES (?, ?)
-        """, ("user1", "123456789"))
+        """, ("user1", "791360434"))
         user_id = cursor.lastrowid
         logger.info(f"✓ Tạo user mẫu: user1 (ID: {user_id})")
         

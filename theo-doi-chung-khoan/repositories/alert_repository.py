@@ -168,6 +168,51 @@ def deactivate_price_alert(alert_id: int) -> None:
         raise
 
 
+def reactivate_price_alert(alert_id: int, user_id: int) -> None:
+    """
+    Kích hoạt lại một cảnh báo đã vô hiệu hóa (set is_active=1).
+    
+    Kiểm tra rằng cảnh báo thuộc về người dùng (bảo mật).
+    
+    Args:
+        alert_id: ID cảnh báo
+        user_id: ID người dùng (để xác thực quyền sở hữu)
+    
+    Raises:
+        ValueError: Nếu alert_id không tồn tại hoặc không thuộc về user_id
+    """
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # Kiểm tra cảnh báo tồn tại và thuộc về người dùng
+        cursor.execute(
+            "SELECT id FROM price_alerts WHERE id = ? AND user_id = ?",
+            (alert_id, user_id)
+        )
+        
+        if cursor.fetchone() is None:
+            raise ValueError(
+                f"Cảnh báo id={alert_id} không tồn tại hoặc không thuộc về user_id={user_id}"
+            )
+        
+        # Kích hoạt lại cảnh báo
+        cursor.execute(
+            "UPDATE price_alerts SET is_active = 1 WHERE id = ?",
+            (alert_id,)
+        )
+        conn.commit()
+        
+        logger.info("Kích hoạt lại cảnh báo id=%s của user_id=%s", alert_id, user_id)
+    except ValueError:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        logger.exception("Lỗi khi kích hoạt lại cảnh báo")
+        raise
+
+
 def get_active_alerts_by_symbol(symbol: str) -> list[PriceAlert]:
     """
     Lấy tất cả cảnh báo đang hoạt động cho một mã cổ phiếu.

@@ -3,10 +3,16 @@
 # docs/requirements.md mục 2 (Lưu ý kỹ thuật).
 
 import logging
+import os
 import sys
-from datetime import datetime
+import time
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from services.alert_service import process_price_alerts
+from utils.time_util import setup_local_timezone, format_local_time_for_log, format_next_schedule
+
+# Set up timezone for local time display
+setup_local_timezone()
 
 # CẤU HÌNH LOGGING
 logging.basicConfig(
@@ -19,20 +25,17 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+scheduler = BackgroundScheduler()
 
 
-def main():
+def check_alerts():
     """
-    Entrypoint chính của alert_bot.
-    
-    Gọi process_price_alerts() mỗi khi script chạy (thường mỗi 5 phút qua cron).
-    Ghi log chi tiết về các cảnh báo được kích hoạt.
+    Kiểm tra cảnh báo giá và kích hoạt nếu cần.
+    Hàm này được gọi định kỳ bởi scheduler.
     """
-    logger.info("=" * 80)
-    logger.info(f"Alert bot khởi động lúc {datetime.now()}")
-    logger.info("=" * 80)
-    
     try:
+        logger.debug(f"Kiểm tra cảnh báo lúc {format_local_time_for_log()}")
+        
         # Xử lý tất cả cảnh báo đang hoạt động
         result = process_price_alerts()
         
@@ -51,11 +54,64 @@ def main():
                     f"type: {alert_detail['alert_type']}, "
                     f"user_id: {alert_detail['user_id']})"
                 )
-        
-        logger.info("Alert bot hoàn tất thành công")
     
     except Exception as e:
         logger.exception("Lỗi trong quá trình xử lý cảnh báo!")
+
+
+def main():
+    """
+    Entrypoint chính của alert_bot.
+    
+    Khởi động BackgroundScheduler để kiểm tra cảnh báo mỗi 1 phút.
+    Scheduler chạy liên tục trong background cho đến khi nhận tín hiệu dừng.
+    """
+    global scheduler
+    
+    logger.info("=" * 80)
+    logger.info(f"Alert bot khởi động lúc {format_local_time_for_log()}")
+    logger.info("=" * 80)
+    
+    try:
+        bot_interval_minutes = int(os.getenv("BOT_INTERVAL_MINUTES", 1))
+        
+        # Cấu hình scheduler
+        scheduler.add_job(
+            check_alerts,
+            'interval',
+            minutes=bot_interval_minutes,
+            id='check_price_alerts',
+            name='Kiểm tra cảnh báo giá',
+            replace_existing=True
+        )
+        
+        logger.info(f'Scheduler được cấu hình: kiểm tra cảnh báo mỗi {bot_interval_minutes} phút')
+        
+        # Chạy job đầu tiên ngay lập tức
+        logger.info("Chạy kiểm tra cảnh báo lần đầu tiên...")
+        check_alerts()
+        
+        # Khởi động scheduler
+        logger.info("Khởi động scheduler...")
+        scheduler.start()
+        logger.info("Alert bot đang chạy. Nhấn Ctrl+C để dừng.")
+        logger.info(f"Lịch kiểm tra tiếp theo: {format_next_schedule(bot_interval_minutes)}")
+        
+        # Giữ scheduler chạy
+        try:
+            while True:
+                time.sleep(1)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+    
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("Nhận tín hiệu dừng. Đang tắt scheduler...")
+        scheduler.shutdown()
+        logger.info("Alert bot đã dừng")
+    except Exception as e:
+        logger.exception("Lỗi nghiêm trọng trong alert bot!")
+        if scheduler.running:
+            scheduler.shutdown()
         sys.exit(1)
 
 

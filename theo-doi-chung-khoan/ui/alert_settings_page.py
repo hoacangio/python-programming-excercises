@@ -7,7 +7,8 @@ import pandas as pd
 from services.alert_service import (
     add_price_alert,
     list_price_alerts,
-    deactivate_price_alert
+    deactivate_price_alert,
+    reactivate_price_alert
 )
 from services.dashboard_service import get_available_symbols
 
@@ -151,8 +152,34 @@ def render_alerts_list():
                     st.error(f"❌ Lỗi: {e}")
         else:
             st.info("Không có cảnh báo đang hoạt động để vô hiệu hóa")
+        
+        # Nút kích hoạt lại cảnh báo
+        st.divider()
+        
+        inactive_alerts = alerts_df[~alerts_df["is_active"]].copy()
+        
+        if not inactive_alerts.empty:
+            st.subheader("🔄 Kích hoạt lại cảnh báo")
+            
+            alert_to_reactivate = st.selectbox(
+                "Chọn cảnh báo để kích hoạt lại",
+                options=inactive_alerts["id"].tolist(),
+                format_func=lambda x: f"ID {x}: {inactive_alerts[inactive_alerts['id'] == x]['symbol'].values[0]}",
+                key="reactivate_selectbox"
+            )
+            
+            if st.button("Kích hoạt lại cảnh báo", use_container_width=True, key="reactivate_button"):
+                try:
+                    reactivate_price_alert(alert_to_reactivate, USER_ID)
+                    st.success(f"✅ Cảnh báo {alert_to_reactivate} đã được kích hoạt lại")
+                    st.rerun()
+                except ValueError as e:
+                    st.error(f"❌ Lỗi xác thực: {e}")
+                except Exception as e:
+                    st.error(f"❌ Lỗi: {e}")
     
     except Exception as e:
         st.error(f"Lỗi khi lấy danh sách cảnh báo: {e}")
+
 
 
