@@ -260,9 +260,12 @@ def _insert_market_data_to_db(cursor: sqlite3.Cursor, symbol: str, df: pd.DataFr
     # Clear old data
     cursor.execute("DELETE FROM market_prices WHERE symbol = ?", (symbol.upper(),))
     
-    # Ensure columns are lowercase
+    if df is None or df.empty:
+        return 0
+    
+    # Ensure columns are lowercase and strip whitespace
     df = df.copy()
-    df.columns = df.columns.str.lower() if hasattr(df.columns, 'str') else [col.lower() for col in df.columns]
+    df.columns = [col.lower().strip() for col in df.columns]
     
     # Prepare data
     rows = []
@@ -272,18 +275,28 @@ def _insert_market_data_to_db(cursor: sqlite3.Cursor, symbol: str, df: pd.DataFr
             if hasattr(trade_date, 'to_pydatetime'):
                 trade_date = trade_date.to_pydatetime()
             
-            close_val = float(row.get('close', 0))
-            if close_val > 0:
+            # Convert Series to dict for proper access
+            row_dict = row.to_dict()
+            
+            # Extract OHLCV values
+            open_val = float(row_dict.get('open', 0))
+            high_val = float(row_dict.get('high', 0))
+            low_val = float(row_dict.get('low', 0))
+            close_val = float(row_dict.get('close', 0))
+            volume_val = int(float(row_dict.get('volume', 0)))
+            
+            # Only insert if we have valid prices
+            if close_val > 0 and high_val > 0 and low_val > 0 and open_val > 0:
                 rows.append((
                     symbol.upper(),
                     trade_date,
-                    float(row.get('open', 0)),
-                    float(row.get('high', 0)),
-                    float(row.get('low', 0)),
+                    open_val,
+                    high_val,
+                    low_val,
                     close_val,
-                    int(row.get('volume', 0))
+                    volume_val
                 ))
-        except (ValueError, TypeError) as e:
+        except (ValueError, TypeError, KeyError) as e:
             # Skip malformed rows
             logger.debug(f"Skipped malformed row for {symbol}: {e}")
             continue

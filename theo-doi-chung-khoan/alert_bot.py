@@ -87,9 +87,9 @@ def main():
         
         logger.info(f'Scheduler được cấu hình: kiểm tra cảnh báo mỗi {bot_interval_minutes} phút')
         
-        # Chạy job đầu tiên ngay lập tức
-        logger.info("Chạy kiểm tra cảnh báo lần đầu tiên...")
-        check_alerts()
+        # # Chạy job đầu tiên ngay lập tức
+        # logger.info("Chạy kiểm tra cảnh báo lần đầu tiên...")
+        # check_alerts()
         
         # Khởi động scheduler
         logger.info("Khởi động scheduler...")
