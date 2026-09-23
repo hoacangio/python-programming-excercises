@@ -1,0 +1,10 @@
+CREATE DATABASE IF NOT EXISTS QLNhanVien;
+USE QLNhanVien;
+
+CREATE TABLE IF NOT EXISTS nhan_vien (
+    id_nv INT AUTO_INCREMENT PRIMARY KEY,
+    ho_ten VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    email VARCHAR(100),
+    chuc_vu VARCHAR(50)
+);
