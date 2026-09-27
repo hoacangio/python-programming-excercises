@@ -6,3 +6,5 @@ Chương 3: Phân tích & Thiết kế,15 - 20 trang,3.500 - 5.000 chữ*
 Chương 4: Triển khai & Kết quả,10 - 15 trang,2.500 - 4.000 chữ*
 Chương 5: Kết luận & Hướng phát triển,2 - 4 trang,700 - 1.200 chữ
 Tổng cộng,~50 trang,~11.000 - 16.500 chữ
+
+
