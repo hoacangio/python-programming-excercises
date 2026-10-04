@@ -66,9 +66,10 @@ def display_add_transaction_page():
         # Giá
         price = st.number_input(
             "Giá (VND)",
-            min_value=0.01,
-            value=100.0,
-            step=0.01
+            min_value=1.0,
+            value=10_000.0,
+            step=100.0,
+            format="%.0f"
         )
         
         # Ghi chú (tùy chọn)

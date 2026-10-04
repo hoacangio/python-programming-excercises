@@ -42,6 +42,7 @@ def check_alerts():
         # Ghi log kết quả
         logger.info(f"Tổng cảnh báo được kiểm tra: {result['total_alerts']}")
         logger.info(f"Cảnh báo được kích hoạt: {result['triggered']}")
+        logger.info(f"Cảnh báo đã gửi và vô hiệu hóa: {result.get('deactivated', 0)}")
         
         if result['details']:
             logger.info("Chi tiết cảnh báo được kích hoạt:")

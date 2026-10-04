@@ -136,29 +136,34 @@ def list_price_alerts(user_id: int, active_only: bool = True) -> list[PriceAlert
         raise
 
 
-def deactivate_price_alert(alert_id: int) -> None:
+def deactivate_price_alert(alert_id: int, user_id: int) -> None:
     """
     Vô hiệu hóa một cảnh báo (set is_active=0).
     
+    Kiểm tra rằng cảnh báo thuộc về người dùng (bảo mật).
+    
     Args:
         alert_id: ID cảnh báo
+        user_id: ID người dùng (để xác thực quyền sở hữu)
     
     Raises:
-        ValueError: Nếu alert_id không tồn tại
+        ValueError: Nếu alert_id không tồn tại hoặc không thuộc về user_id
     """
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE price_alerts SET is_active = 0 WHERE id = ?",
-            (alert_id,)
+            "UPDATE price_alerts SET is_active = 0 WHERE id = ? AND user_id = ?",
+            (alert_id, user_id)
         )
-        conn.commit()
         
         if cursor.rowcount == 0:
-            raise ValueError(f"Cảnh báo id={alert_id} không tồn tại")
+            raise ValueError(
+                f"Cảnh báo id={alert_id} không tồn tại hoặc không thuộc về user_id={user_id}"
+            )
         
-        logger.info("Vô hiệu hóa cảnh báo id=%s", alert_id)
+        conn.commit()
+        logger.info("Vô hiệu hóa cảnh báo id=%s của user_id=%s", alert_id, user_id)
     except ValueError:
         conn.rollback()
         raise

@@ -54,17 +54,17 @@ DEMO_USERS = [
 # Sample transactions
 DEMO_TRANSACTIONS = {
     "demo_trader_1": [
-        {"symbol": "VNM", "transaction_type": "BUY", "quantity": 100, "price": 85.0},
-        {"symbol": "ACB", "transaction_type": "BUY", "quantity": 200, "price": 24.0},
-        {"symbol": "BID", "transaction_type": "BUY", "quantity": 150, "price": 42.0},
+        {"symbol": "VNM", "transaction_type": "BUY", "quantity": 100, "price": 85_000},
+        {"symbol": "ACB", "transaction_type": "BUY", "quantity": 200, "price": 24_000},
+        {"symbol": "BID", "transaction_type": "BUY", "quantity": 150, "price": 42_000},
     ],
     "demo_trader_2": [
-        {"symbol": "FPT", "transaction_type": "BUY", "quantity": 50, "price": 68.0},
-        {"symbol": "VIC", "transaction_type": "BUY", "quantity": 75, "price": 55.0},
-        {"symbol": "TCB", "transaction_type": "BUY", "quantity": 100, "price": 30.0},
+        {"symbol": "FPT", "transaction_type": "BUY", "quantity": 50, "price": 68_000},
+        {"symbol": "VIC", "transaction_type": "BUY", "quantity": 75, "price": 55_000},
+        {"symbol": "TCB", "transaction_type": "BUY", "quantity": 100, "price": 30_000},
     ],
     "demo_no_telegram": [
-        {"symbol": "GAS", "transaction_type": "BUY", "quantity": 80, "price": 35.0},
+        {"symbol": "GAS", "transaction_type": "BUY", "quantity": 80, "price": 35_000},
     ],
 }
 
@@ -73,49 +73,49 @@ DEMO_ALERTS = {
     "demo_trader_1": [
         {
             "symbol": "VNM",
-            "target_price": 90.0,
+            "target_price": 90_000,
             "condition": "GREATER_THAN_OR_EQUAL",
             "alert_type": "TAKE_PROFIT",
-            "description": "Lấy lợi khi VNM >= 90"
+            "description": "Lấy lợi khi VNM >= 90.000"
         },
         {
             "symbol": "VNM",
-            "target_price": 80.0,
+            "target_price": 80_000,
             "condition": "LESS_THAN_OR_EQUAL",
             "alert_type": "STOP_LOSS",
-            "description": "Cắt lỗ khi VNM <= 80"
+            "description": "Cắt lỗ khi VNM <= 80.000"
         },
         {
             "symbol": "ACB",
-            "target_price": 26.0,
+            "target_price": 26_000,
             "condition": "GREATER_THAN_OR_EQUAL",
             "alert_type": "TAKE_PROFIT",
-            "description": "Lấy lợi khi ACB >= 26"
+            "description": "Lấy lợi khi ACB >= 26.000"
         },
     ],
     "demo_trader_2": [
         {
             "symbol": "FPT",
-            "target_price": 70.0,
+            "target_price": 70_000,
             "condition": "GREATER_THAN_OR_EQUAL",
             "alert_type": "TAKE_PROFIT",
-            "description": "Lấy lợi khi FPT >= 70"
+            "description": "Lấy lợi khi FPT >= 70.000"
         },
         {
             "symbol": "VIC",
-            "target_price": 50.0,
+            "target_price": 50_000,
             "condition": "LESS_THAN_OR_EQUAL",
             "alert_type": "STOP_LOSS",
-            "description": "Cắt lỗ khi VIC <= 50"
+            "description": "Cắt lỗ khi VIC <= 50.000"
         },
     ],
     "demo_no_telegram": [
         {
             "symbol": "GAS",
-            "target_price": 40.0,
+            "target_price": 40_000,
             "condition": "GREATER_THAN_OR_EQUAL",
             "alert_type": "TAKE_PROFIT",
-            "description": "Lấy lợi khi GAS >= 40"
+            "description": "Lấy lợi khi GAS >= 40.000"
         },
     ],
 }

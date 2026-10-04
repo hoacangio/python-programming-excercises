@@ -48,9 +48,10 @@ def render_add_alert_form():
         
         target_price = st.number_input(
             "Giá mục tiêu (VND)",
-            min_value=0.01,
-            value=100.0,
-            step=0.01
+            min_value=1.0,
+            value=10_000.0,
+            step=100.0,
+            format="%.0f"
         )
         
         condition = st.radio(
@@ -145,7 +146,7 @@ def render_alerts_list():
             
             if st.button("Vô hiệu hóa cảnh báo", use_container_width=True):
                 try:
-                    deactivate_price_alert(alert_to_deactivate)
+                    deactivate_price_alert(alert_to_deactivate, USER_ID)
                     st.success(f"✅ Cảnh báo {alert_to_deactivate} đã vô hiệu hóa")
                     st.rerun()
                 except Exception as e:

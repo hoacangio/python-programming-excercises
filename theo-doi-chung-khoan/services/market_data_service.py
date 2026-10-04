@@ -1,6 +1,7 @@
 # get_current_prices: tích hợp yfinance.
 # Thiết kế: docs/functions/get_current_prices.md
 import logging
+import os
 from datetime import date
 
 import pandas as pd
@@ -22,6 +23,21 @@ _OHLCV_COLUMNS = [
 ]
 
 _REQUEST_TIMEOUT = 10
+
+# Hậu tố sàn trên Yahoo Finance: cổ phiếu HOSE có dạng "VNM.VN".
+# Không có hậu tố, yfinance trả về mã trùng tên trên sàn Mỹ.
+_YAHOO_SUFFIX = os.getenv("YAHOO_SYMBOL_SUFFIX", ".VN")
+
+
+def to_yahoo_ticker(symbol: str) -> str:
+    """
+    Chuyển mã nội bộ (VNM) sang mã Yahoo Finance (VNM.VN).
+    Mã đã có hậu tố (chứa dấu chấm) được giữ nguyên.
+    """
+    sym = str(symbol).strip().upper()
+    if "." in sym or not _YAHOO_SUFFIX:
+        return sym
+    return f"{sym}{_YAHOO_SUFFIX}"
 
 
 # CUSTOM ERROR
@@ -82,7 +98,7 @@ def get_current_prices(
             # GỌI YFINANCE
 
             df = yf.download(
-                tickers=symbol,
+                tickers=to_yahoo_ticker(symbol),
                 period="1d",
                 interval="1m",
                 auto_adjust=False,

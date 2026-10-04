@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant W as Worker
+    participant A as Dịch vụ cảnh báo
+    participant R as Tầng dữ liệu
+    participant M as Dịch vụ giá
+    participant T as Telegram
+    W->>A: Bắt đầu chu kỳ kiểm tra
+    A->>R: Đọc cảnh báo đang bật
+    R-->>A: Danh sách cảnh báo
+    A->>M: Lấy giá các mã (không trùng)
+    M-->>A: Giá hiện tại
+    loop Mỗi cảnh báo có giá
+        A->>A: So sánh giá với ngưỡng
+        opt Đạt ngưỡng
+            A->>R: Lấy mã chat Telegram
+        end
+    end
+    A->>T: Gửi các tin nhắn cảnh báo
+    T-->>A: Kết quả từng tin
+    loop Mỗi tin gửi thành công
+        A->>R: Tắt cảnh báo
+    end
+    Note over A,R: Tin gửi lỗi: cảnh báo vẫn bật, gửi lại ở chu kỳ sau
+    A-->>W: Thống kê: đã kiểm tra, đạt ngưỡng, đã gửi, lỗi

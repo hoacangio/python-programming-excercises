@@ -6,7 +6,9 @@ services:
     volumes:
       - ./data:/data   # mount your local folder with portfolio.db
     ports:
-      - "8080:8080"    # access via http://localhost:8080
+      # Chỉ mở trên máy local: sqlite-web không có xác thực, ai truy cập được
+      # cổng này đều sửa được toàn bộ dữ liệu.
+      - "127.0.0.1:8080:8080"    # access via http://localhost:8080
     command: sqlite_web -H 0.0.0.0 -p 8080 /data/portfolio.db
     restart: unless-stopped
 

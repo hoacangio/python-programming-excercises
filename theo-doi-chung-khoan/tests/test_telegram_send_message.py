@@ -11,8 +11,16 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.messaging_service import send_alert_notification, get_bot_token
 from dotenv import load_dotenv
+import pytest
 
 
+# Gửi tin nhắn thật qua Telegram: chỉ chạy khi đặt RUN_TELEGRAM_TEST=1.
+
+
+@pytest.mark.skipif(
+    os.getenv("RUN_TELEGRAM_TEST") != "1",
+    reason="Gửi tin nhắn thật; đặt RUN_TELEGRAM_TEST=1 để chạy"
+)
 def test_send_message_to_chat_id():
     """
     Test sending a message to Telegram chat ID 791360434

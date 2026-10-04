@@ -1,0 +1,22 @@
+flowchart TB
+    U([Nhà đầu tư]) --> UI
+    Cron[Bộ lập lịch APScheduler] --> W[Tiến trình nền kiểm tra cảnh báo]
+    subgraph P[Tầng giao diện]
+        UI[Streamlit: Dashboard, thêm giao dịch, cảnh báo]
+    end
+    subgraph S[Tầng dịch vụ]
+        direction LR
+        Port[Giao dịch và danh mục]
+        Chart[Biểu đồ]
+        Alert[Cảnh báo]
+        Market[Dữ liệu thị trường]
+        Msg[Gửi Telegram]
+    end
+    subgraph D[Tầng dữ liệu]
+        Repo[Repositories] --> DB[(SQLite)]
+    end
+    UI --> S
+    W --> Alert
+    S --> D
+    Market --> YF[Yahoo Finance, mã .VN]
+    Msg --> TG[Telegram Bot API]

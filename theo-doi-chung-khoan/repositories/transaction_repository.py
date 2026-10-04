@@ -199,13 +199,18 @@ def get_transactions(user_id: int) -> list[Transaction]:
 
 def get_portfolio(user_id: int) -> dict:
     """
-    Tính toán danh mục hiện tại (từng mã cổ phiếu).
-    
+    Tính toán danh mục hiện tại (từng mã cổ phiếu) theo phương pháp
+    giá vốn bình quân gia quyền.
+
+    - BUY q @ p:  A = (Q*A + q*p) / (Q + q), Q = Q + q
+    - SELL q @ p: realized += q * (p - A), Q = Q - q (A không đổi)
+
     Args:
         user_id: ID người dùng
-    
+
     Returns:
-        Dict: {symbol: {quantity, total_buy_value, total_buy_quantity}, ...}
+        Dict: {symbol: {quantity, average_price, cost_value, realized_profit}, ...}
+        Bao gồm cả mã đã bán hết (quantity = 0) để giữ lãi/lỗ đã thực hiện.
     """
     conn = get_db_connection()
     try:
@@ -231,19 +236,26 @@ def get_portfolio(user_id: int) -> dict:
             if symbol not in portfolio:
                 portfolio[symbol] = {
                     "quantity": 0,
-                    "total_buy_value": 0.0,
-                    "total_buy_quantity": 0
+                    "average_price": 0.0,
+                    "realized_profit": 0.0
                 }
-            
+
             item = portfolio[symbol]
-            
+            held = item["quantity"]
+            avg = item["average_price"]
+
             if transaction_type == "BUY":
-                item["quantity"] += quantity
-                item["total_buy_value"] += quantity * price
-                item["total_buy_quantity"] += quantity
+                item["average_price"] = (held * avg + quantity * price) / (held + quantity)
+                item["quantity"] = held + quantity
             elif transaction_type == "SELL":
-                item["quantity"] -= quantity
-        
+                item["realized_profit"] += quantity * (price - avg)
+                item["quantity"] = held - quantity
+                if item["quantity"] <= 0:
+                    item["average_price"] = 0.0
+
+        for item in portfolio.values():
+            item["cost_value"] = item["quantity"] * item["average_price"]
+
         return portfolio
     except Exception as e:
         logger.exception("Lỗi khi tính toán danh mục cho user_id=%s", user_id)

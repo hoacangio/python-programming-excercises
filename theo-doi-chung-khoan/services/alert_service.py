@@ -88,21 +88,24 @@ def list_price_alerts(user_id: int, active_only: bool = True) -> pd.DataFrame:
         raise
 
 
-def deactivate_price_alert(alert_id: int) -> None:
+def deactivate_price_alert(alert_id: int, user_id: int) -> None:
     """
     Vô hiệu hóa một cảnh báo giá.
     
+    Người dùng chỉ có thể vô hiệu hóa cảnh báo của chính họ (xác thực qua user_id).
+    
     Args:
         alert_id: ID cảnh báo
+        user_id: ID người dùng (để xác thực quyền sở hữu)
     
     Raises:
-        ValueError: Nếu alert_id không tồn tại
+        ValueError: Nếu alert_id không tồn tại hoặc không thuộc về user_id
     """
     try:
-        alert_repository.deactivate_price_alert(alert_id)
-        logger.info("Cảnh báo %s đã vô hiệu hóa", alert_id)
+        alert_repository.deactivate_price_alert(alert_id, user_id)
+        logger.info("Cảnh báo %s đã vô hiệu hóa cho user_id=%s", alert_id, user_id)
     except ValueError as e:
-        logger.warning("Cảnh báo không tồn tại: %s", e)
+        logger.warning("Không thể vô hiệu hóa cảnh báo: %s", e)
         raise
     except Exception as e:
         logger.exception("Lỗi khi vô hiệu hóa cảnh báo")
@@ -138,17 +141,23 @@ def process_price_alerts() -> dict:
     Xử lý tất cả các cảnh báo giá đang hoạt động.
     
     Kiểm tra giá hiện tại của mỗi mã cổ phiếu và so sánh với các ngưỡng cảnh báo.
-    Nếu giá thỏa mãn điều kiện, vô hiệu hóa cảnh báo.
+    Cảnh báo đạt ngưỡng được gửi qua Telegram trước; chỉ những cảnh báo gửi
+    thành công mới bị vô hiệu hóa (đảm bảo "ít nhất một lần"). Cảnh báo gửi lỗi
+    vẫn active và được gửi lại ở chu kỳ sau.
     
-    Dùng bởi alert_bot.py chạy mỗi 5 phút.
+    Dùng bởi alert_bot.py chạy theo BOT_INTERVAL_MINUTES.
     
     Returns:
         Dict kết quả: {
             "total_alerts": số cảnh báo được kiểm tra,
-            "triggered": số cảnh báo được kích hoạt,
-            "details": [{alert_id, symbol, current_price, target_price, condition}]
+            "triggered": số cảnh báo đạt ngưỡng,
+            "deactivated": số cảnh báo đã gửi thành công và được vô hiệu hóa,
+            "details": [{alert_id, symbol, current_price, target_price, condition, ...}],
+            "messaging": kết quả gửi Telegram
         }
     """
+    empty_messaging = {"total": 0, "successful": 0, "failed": 0, "details": []}
+    
     try:
         # Lấy tất cả cảnh báo đang hoạt động
         all_alerts = alert_repository.get_all_active_alerts()
@@ -158,7 +167,9 @@ def process_price_alerts() -> dict:
             return {
                 "total_alerts": 0,
                 "triggered": 0,
-                "details": []
+                "deactivated": 0,
+                "details": [],
+                "messaging": empty_messaging
             }
         
         # Nhóm cảnh báo theo mã cổ phiếu
@@ -172,80 +183,77 @@ def process_price_alerts() -> dict:
             return {
                 "total_alerts": len(all_alerts),
                 "triggered": 0,
+                "deactivated": 0,
                 "details": [],
+                "messaging": empty_messaging,
                 "error": str(e)
             }
         
+        # Bước 1: tìm các cảnh báo đạt ngưỡng
         triggered_alerts = []
-        triggered_count = 0
         
         for alert in all_alerts:
-            symbol = alert.symbol
-            target_price = alert.target_price
-            condition = alert.condition
-            alert_id = alert.id
-            
-            # Lấy giá hiện tại
-            current_price = current_prices.get(symbol)
+            current_price = current_prices.get(alert.symbol)
             
             if current_price is None:
-                logger.warning("Không tìm thấy giá cho %s", symbol)
+                logger.warning("Không tìm thấy giá cho %s", alert.symbol)
                 continue
             
-            # Use model method to check if alert should trigger
-            should_trigger = alert.should_trigger(current_price)
+            if not alert.should_trigger(current_price):
+                continue
             
-            # Nếu thỏa mãn điều kiện, vô hiệu hóa cảnh báo
-            if should_trigger:
-                try:
-                    alert_repository.deactivate_price_alert(alert_id)
-                    triggered_count += 1
-                    
-                    # Lấy thông tin người dùng để có telegram_chat_id
-                    user = user_repository.get_user(alert.user_id)
-                    telegram_chat_id = user.telegram_chat_id if user else None
-                    
-                    triggered_alerts.append({
-                        "alert_id": alert_id,
-                        "symbol": symbol,
-                        "current_price": current_price,
-                        "target_price": target_price,
-                        "condition": condition,
-                        "alert_type": alert.alert_type,
-                        "user_id": alert.user_id,
-                        "telegram_chat_id": telegram_chat_id
-                    })
-                    logger.info(
-                        "Cảnh báo %s được kích hoạt: %s @ %s (target: %s)",
-                        alert_id, symbol, current_price, target_price
-                    )
-                except Exception as e:
-                    logger.exception("Lỗi khi vô hiệu hóa cảnh báo %s", alert_id)
+            user = user_repository.get_user(alert.user_id)
+            telegram_chat_id = user.telegram_chat_id if user else None
+            
+            triggered_alerts.append({
+                "alert_id": alert.id,
+                "symbol": alert.symbol,
+                "current_price": current_price,
+                "target_price": alert.target_price,
+                "condition": alert.condition,
+                "alert_type": alert.alert_type,
+                "user_id": alert.user_id,
+                "telegram_chat_id": telegram_chat_id
+            })
+            logger.info(
+                "Cảnh báo %s đạt ngưỡng: %s @ %s (target: %s)",
+                alert.id, alert.symbol, current_price, alert.target_price
+            )
         
-        # Gửi Telegram notifications cho tất cả cảnh báo được kích hoạt
-        messaging_result = None
+        # Bước 2: gửi Telegram
+        messaging_result = empty_messaging
         if triggered_alerts:
             try:
                 messaging_result = messaging_service.send_bulk_alert_notifications(triggered_alerts)
                 logger.info("Gửi Telegram notifications: %s", messaging_result)
-            except Exception as e:
-                logger.exception("Lỗi khi gửi Telegram notifications")
+            except Exception:
+                logger.exception("Lỗi khi gửi Telegram notifications; cảnh báo giữ active để gửi lại")
+        
+        # Bước 3: chỉ vô hiệu hóa cảnh báo đã gửi thành công
+        sent_ids = {
+            d["alert_id"] for d in messaging_result["details"] if d["status"] == "sent"
+        }
+        deactivated_count = 0
+        for item in triggered_alerts:
+            if item["alert_id"] not in sent_ids:
+                continue
+            try:
+                alert_repository.deactivate_price_alert(item["alert_id"], item["user_id"])
+                deactivated_count += 1
+            except Exception:
+                logger.exception("Lỗi khi vô hiệu hóa cảnh báo %s", item["alert_id"])
         
         result = {
             "total_alerts": len(all_alerts),
-            "triggered": triggered_count,
+            "triggered": len(triggered_alerts),
+            "deactivated": deactivated_count,
             "details": triggered_alerts,
-            "messaging": messaging_result or {
-                "total": 0,
-                "successful": 0,
-                "failed": 0,
-                "details": []
-            }
+            "messaging": messaging_result
         }
         
         logger.info(
-            "Xử lý cảnh báo hoàn tất: %d/%d cảnh báo được kích hoạt",
-            triggered_count, len(all_alerts)
+            "Xử lý cảnh báo hoàn tất: %d/%d đạt ngưỡng, %d đã gửi và vô hiệu hóa",
+            len(triggered_alerts), len(all_alerts), deactivated_count
         )
         
         return result
@@ -253,4 +261,3 @@ def process_price_alerts() -> dict:
     except Exception as e:
         logger.exception("Lỗi trong quá trình xử lý cảnh báo")
         raise
-

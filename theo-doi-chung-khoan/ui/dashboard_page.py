@@ -4,7 +4,7 @@
 import streamlit as st
 import pandas as pd
 
-from services.portfolio_service import get_portfolio_summary
+from services.portfolio_service import get_portfolio_summary, get_total_realized_profit
 from services.chart_service import build_candlestick_chart
 from services.dashboard_service import get_market_data_for_symbol
 
@@ -27,10 +27,15 @@ def display_dashboard_page():
         # Hiển thị metrics tổng quan
         st.subheader("Tổng quan danh mục")
         
+        # Chỉ tính giá trị thị trường và lãi/lỗ trên các mã đã có giá
+        priced_df = portfolio_df[portfolio_df["current_price"].notna()]
+        unpriced_symbols = portfolio_df.loc[portfolio_df["current_price"].isna(), "symbol"].tolist()
+        
         total_cost = portfolio_df["cost_value"].sum()
-        total_market_value = portfolio_df["market_value"].sum()
-        total_unrealized_profit = portfolio_df["unrealized_profit"].sum()
-        total_realized_profit = portfolio_df["realized_profit"].sum()
+        priced_cost = priced_df["cost_value"].sum()
+        total_market_value = priced_df["market_value"].sum()
+        total_unrealized_profit = priced_df["unrealized_profit"].sum()
+        total_realized_profit = get_total_realized_profit(USER_ID)
         
         col1, col2, col3, col4 = st.columns(4)
         
@@ -48,8 +53,8 @@ def display_dashboard_page():
             )
         
         with col3:
-            if total_cost > 0:
-                pct = (total_unrealized_profit / total_cost) * 100
+            if priced_cost > 0:
+                pct = (total_unrealized_profit / priced_cost) * 100
             else:
                 pct = 0
             st.metric(
@@ -61,6 +66,12 @@ def display_dashboard_page():
             st.metric(
                 "Lợi nhuận đã nhận",
                 f"{total_realized_profit:,.0f} VND"
+            )
+        
+        if unpriced_symbols:
+            st.warning(
+                "Chưa có giá cho: " + ", ".join(unpriced_symbols)
+                + ". Các mã này không được tính vào giá trị thị trường và lợi nhuận."
             )
         
         # Hiển thị bảng danh mục
@@ -77,6 +88,12 @@ def display_dashboard_page():
             "Mã CP", "Số lượng", "Giá vốn TB", "Giá hiện tại",
             "Tổng vốn", "Giá trị TT", "Lợi nhuận", "LN %"
         ]
+        
+        # Định dạng thành chuỗi để hiển thị "Chưa có giá" thay cho NaN
+        for col in display_df.columns[2:]:
+            display_df[col] = display_df[col].map(
+                lambda v: "Chưa có giá" if pd.isna(v) else f"{v:,.2f}"
+            )
         
         st.dataframe(display_df, use_container_width=True)
         

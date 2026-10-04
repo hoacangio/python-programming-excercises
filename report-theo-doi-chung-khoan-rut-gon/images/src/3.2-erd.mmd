@@ -1,0 +1,40 @@
+erDiagram
+    users ||--o{ transactions : "ghi nhan"
+    users ||--o{ price_alerts : "thiet lap"
+    users {
+        INTEGER id PK
+        VARCHAR username UK
+        VARCHAR telegram_chat_id
+        TIMESTAMP created_at
+    }
+    transactions {
+        INTEGER id PK
+        INTEGER user_id FK
+        VARCHAR symbol
+        VARCHAR transaction_type
+        INTEGER quantity
+        DECIMAL price
+        TIMESTAMP transaction_date
+        TEXT notes
+    }
+    price_alerts {
+        INTEGER id PK
+        INTEGER user_id FK
+        VARCHAR symbol
+        DECIMAL target_price
+        VARCHAR condition
+        VARCHAR alert_type
+        BOOLEAN is_active
+        TIMESTAMP created_at
+    }
+    market_prices {
+        INTEGER id PK
+        VARCHAR symbol
+        TIMESTAMP trade_date
+        DECIMAL open
+        DECIMAL high
+        DECIMAL low
+        DECIMAL close
+        INTEGER volume
+        TIMESTAMP created_at
+    }

@@ -61,18 +61,29 @@ def add_transaction(
         raise
 
 
+_SUMMARY_COLUMNS = [
+    "symbol", "quantity", "average_price", "current_price",
+    "cost_value", "market_value", "unrealized_profit",
+    "unrealized_percent", "realized_profit"
+]
+
+
 def get_portfolio_summary(user_id: int) -> pd.DataFrame:
     """
     Lấy tóm tắt danh mục hiện tại của người dùng.
     
-    Tính toán từ lịch sử giao dịch (transactions) và giá thị trường hiện tại.
-    Với mỗi mã cổ phiếu đang sở hữu (quantity > 0), tính:
-    - Giá vốn trung bình
+    Tính toán từ lịch sử giao dịch (transactions) theo phương pháp giá vốn
+    bình quân gia quyền và giá thị trường đã lưu. Với mỗi mã đang sở hữu
+    (quantity > 0), tính:
+    - Giá vốn bình quân và vốn của phần đang giữ
     - Giá thị trường hiện tại
     - Giá trị thị trường
-    - Lợi nhuận chưa nhận
-    - Tỷ lệ lợi nhuận (%)
-    - Lợi nhuận đã nhận
+    - Lợi nhuận chưa nhận và tỷ lệ (%)
+    - Lợi nhuận đã nhận từ các lệnh SELL
+    
+    Nếu chưa có giá của một mã, current_price, market_value,
+    unrealized_profit và unrealized_percent là NaN (chưa định giá),
+    không gán 0 để tránh hiển thị lỗ giả.
     
     Args:
         user_id: ID người dùng
@@ -81,87 +92,73 @@ def get_portfolio_summary(user_id: int) -> pd.DataFrame:
         DataFrame với cột:
         - symbol: Mã cổ phiếu
         - quantity: Số lượng sở hữu
-        - average_price: Giá vốn trung bình
-        - current_price: Giá đóng cửa gần nhất
-        - cost_value: Tổng giá vốn
+        - average_price: Giá vốn bình quân
+        - current_price: Giá đóng cửa gần nhất (NaN nếu chưa có giá)
+        - cost_value: Vốn của phần đang giữ (quantity * average_price)
         - market_value: Giá trị thị trường hiện tại (quantity * current_price)
         - unrealized_profit: Lợi nhuận chưa nhận (market_value - cost_value)
         - unrealized_percent: Tỷ lệ lợi nhuận chưa nhận (%)
         - realized_profit: Lợi nhuận đã nhận từ SELL
     """
-    # Lấy portfolio từ repository (chỉ tính từ transactions)
     portfolio_dict = transaction_repository.get_portfolio(user_id)
-    
-    if not portfolio_dict:
-        # Trả về DataFrame rỗng theo schema
-        return pd.DataFrame(columns=[
-            "symbol", "quantity", "average_price", "current_price",
-            "cost_value", "market_value", "unrealized_profit",
-            "unrealized_percent", "realized_profit"
-        ])
     
     result = []
     
     for symbol, item in portfolio_dict.items():
         quantity = item["quantity"]
-        total_buy_value = item["total_buy_value"]
-        total_buy_quantity = item["total_buy_quantity"]
         
         # Bỏ qua nếu không sở hữu
         if quantity <= 0:
             continue
         
-        # Tính giá vốn trung bình
-        if total_buy_quantity > 0:
-            average_price = total_buy_value / total_buy_quantity
-        else:
-            average_price = 0.0
+        average_price = item["average_price"]
+        cost_value = item["cost_value"]
         
         # Lấy giá thị trường hiện tại từ repository
+        current_price = float("nan")
         try:
             latest_df = market_repository.get_latest_price(symbol)
-            if latest_df.empty:
-                current_price = 0.0
-            else:
+            if not latest_df.empty:
                 current_price = float(latest_df.iloc[0]["close"])
         except Exception as e:
             logger.warning("Không thể lấy giá hiện tại cho %s: %s", symbol, e)
-            current_price = 0.0
         
-        # Tính giá trị thị trường
         market_value = quantity * current_price
-        
-        # Tính lợi nhuận chưa nhận
-        unrealized_profit = market_value - total_buy_value
-        
-        # Tính tỷ lệ lợi nhuận
-        if total_buy_value > 0:
-            unrealized_percent = (unrealized_profit / total_buy_value) * 100
-        else:
-            unrealized_percent = 0.0
-        
-        # Lợi nhuận đã nhận (từ SELL)
-        realized_profit = item.get("realized_profit", 0.0)
+        unrealized_profit = market_value - cost_value
+        unrealized_percent = (
+            unrealized_profit / cost_value * 100 if cost_value > 0 else float("nan")
+        )
         
         result.append({
             "symbol": symbol,
             "quantity": quantity,
             "average_price": average_price,
             "current_price": current_price,
-            "cost_value": total_buy_value,
+            "cost_value": cost_value,
             "market_value": market_value,
             "unrealized_profit": unrealized_profit,
             "unrealized_percent": unrealized_percent,
-            "realized_profit": realized_profit
+            "realized_profit": item["realized_profit"]
         })
     
     if not result:
-        return pd.DataFrame(columns=[
-            "symbol", "quantity", "average_price", "current_price",
-            "cost_value", "market_value", "unrealized_profit",
-            "unrealized_percent", "realized_profit"
-        ])
+        return pd.DataFrame(columns=_SUMMARY_COLUMNS)
     
-    df = pd.DataFrame(result)
+    df = pd.DataFrame(result, columns=_SUMMARY_COLUMNS)
     logger.info("Danh mục tóm tắt cho user_id=%s: %d mã", user_id, len(df))
     return df
+
+
+def get_total_realized_profit(user_id: int) -> float:
+    """
+    Tổng lợi nhuận đã nhận của người dùng, gồm cả các mã đã bán hết
+    (không còn xuất hiện trong get_portfolio_summary).
+    
+    Args:
+        user_id: ID người dùng
+    
+    Returns:
+        Tổng lợi nhuận đã nhận (VND)
+    """
+    portfolio_dict = transaction_repository.get_portfolio(user_id)
+    return float(sum(item["realized_profit"] for item in portfolio_dict.values()))

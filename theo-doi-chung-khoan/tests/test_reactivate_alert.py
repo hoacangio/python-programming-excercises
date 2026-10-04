@@ -65,7 +65,7 @@ def test_reactivate_own_alert():
     conn.commit()
     
     # Deactivate it
-    alert_repository.deactivate_price_alert(alert_id)
+    alert_repository.deactivate_price_alert(alert_id, user_id_1)
     
     # Verify it's inactive
     cursor.execute("SELECT is_active FROM price_alerts WHERE id = ?", (alert_id,))
@@ -78,9 +78,8 @@ def test_reactivate_own_alert():
         alert_service.reactivate_price_alert(alert_id, user_id_1)
         print("  ✓ Reactivation call succeeded")
     except Exception as e:
-        print(f"  ✗ Reactivation failed: {e}")
         conn.close()
-        return False
+        raise AssertionError(f"Reactivation failed: {e}")
     
     # Verify it's now active
     cursor.execute("SELECT is_active FROM price_alerts WHERE id = ?", (alert_id,))
@@ -89,7 +88,6 @@ def test_reactivate_own_alert():
     print("  ✓ Alert is now active in database")
     
     conn.close()
-    return True
 
 
 def test_reactivate_other_users_alert_fails():
@@ -110,15 +108,13 @@ def test_reactivate_other_users_alert_fails():
     # Try to reactivate as user_2 (different user)
     try:
         alert_service.reactivate_price_alert(alert_id, user_id_2)
-        print("  ✗ Should have raised ValueError for unauthorized access")
         conn.close()
-        return False
+        raise AssertionError(f"Should have raised ValueError for unauthorized access")
     except ValueError as e:
         print(f"  ✓ Correctly rejected with error: {e}")
     except Exception as e:
-        print(f"  ✗ Wrong exception type: {e}")
         conn.close()
-        return False
+        raise AssertionError(f"Wrong exception type: {e}")
     
     # Verify alert is still inactive
     cursor.execute("SELECT is_active FROM price_alerts WHERE id = ?", (alert_id,))
@@ -127,7 +123,6 @@ def test_reactivate_other_users_alert_fails():
     print("  ✓ Alert remains inactive after failed reactivation")
     
     conn.close()
-    return True
 
 
 def test_reactivate_nonexistent_alert_fails():
@@ -140,18 +135,15 @@ def test_reactivate_nonexistent_alert_fails():
     
     try:
         alert_service.reactivate_price_alert(nonexistent_alert_id, user_id_1)
-        print("  ✗ Should have raised ValueError for non-existent alert")
         conn.close()
-        return False
+        raise AssertionError(f"Should have raised ValueError for non-existent alert")
     except ValueError as e:
         print(f"  ✓ Correctly rejected with error: {e}")
     except Exception as e:
-        print(f"  ✗ Wrong exception type: {e}")
         conn.close()
-        return False
+        raise AssertionError(f"Wrong exception type: {e}")
     
     conn.close()
-    return True
 
 
 def test_reactivate_already_active_alert():
@@ -180,9 +172,8 @@ def test_reactivate_already_active_alert():
         alert_service.reactivate_price_alert(alert_id, user_id_1)
         print("  ✓ Reactivation of already-active alert succeeded")
     except Exception as e:
-        print(f"  ✗ Unexpected error: {e}")
         conn.close()
-        return False
+        raise AssertionError(f"Unexpected error: {e}")
     
     # Verify it's still active
     cursor.execute("SELECT is_active FROM price_alerts WHERE id = ?", (alert_id,))
@@ -191,7 +182,6 @@ def test_reactivate_already_active_alert():
     print("  ✓ Alert remains active")
     
     conn.close()
-    return True
 
 
 def test_reactivate_with_repository_directly():
@@ -214,9 +204,8 @@ def test_reactivate_with_repository_directly():
         alert_repository.reactivate_price_alert(alert_id, user_id_1)
         print("  ✓ Repository reactivate call succeeded")
     except Exception as e:
-        print(f"  ✗ Repository reactivate failed: {e}")
         conn.close()
-        return False
+        raise AssertionError(f"Repository reactivate failed: {e}")
     
     # Verify it's now active
     cursor.execute("SELECT is_active FROM price_alerts WHERE id = ?", (alert_id,))
@@ -225,7 +214,15 @@ def test_reactivate_with_repository_directly():
     print("  ✓ Alert is active in database")
     
     conn.close()
-    return True
+
+
+def _run(test) -> bool:
+    try:
+        test()
+        return True
+    except AssertionError as e:
+        print(f"  ✗ {e}")
+        return False
 
 
 def run_all_tests():
@@ -236,11 +233,11 @@ def run_all_tests():
     
     results = []
     
-    results.append(("Reactivate own alert", test_reactivate_own_alert()))
-    results.append(("Prevent other user reactivation", test_reactivate_other_users_alert_fails()))
-    results.append(("Reject non-existent alert", test_reactivate_nonexistent_alert_fails()))
-    results.append(("Reactivate already-active alert", test_reactivate_already_active_alert()))
-    results.append(("Repository-level reactivate", test_reactivate_with_repository_directly()))
+    results.append(("Reactivate own alert", _run(test_reactivate_own_alert)))
+    results.append(("Prevent other user reactivation", _run(test_reactivate_other_users_alert_fails)))
+    results.append(("Reject non-existent alert", _run(test_reactivate_nonexistent_alert_fails)))
+    results.append(("Reactivate already-active alert", _run(test_reactivate_already_active_alert)))
+    results.append(("Repository-level reactivate", _run(test_reactivate_with_repository_directly)))
     
     print("\n" + "=" * 60)
     print("📊 TEST SUMMARY")

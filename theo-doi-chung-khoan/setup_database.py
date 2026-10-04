@@ -67,14 +67,14 @@ VNINDEX_SYMBOLS = [
 
 # Realistic base prices for all symbols
 SYMBOL_BASE_PRICES = {
-    "VNM": 85.0, "ACB": 24.0, "BID": 42.0, "FPT": 68.0,
-    "VIC": 55.0, "BVH": 48.0, "GAS": 35.0, "STB": 28.0,
-    "TCB": 30.0, "TPB": 25.0, "MBB": 32.0, "SBV": 22.0,
-    "VCB": 72.0, "HDB": 45.0, "CTG": 26.0, "ALF": 18.0,
-    "MSN": 38.0, "SSH": 15.0, "KDC": 20.0, "HPG": 32.0,
-    "HSG": 15.0, "NLG": 28.0, "PDR": 12.0, "PNJ": 52.0,
-    "PVD": 18.0, "SAB": 48.0, "SJS": 45.0, "SSB": 22.0,
-    "TCH": 30.0, "VJC": 95.0,
+    "VNM": 85_000, "ACB": 24_000, "BID": 42_000, "FPT": 68_000,
+    "VIC": 55_000, "BVH": 48_000, "GAS": 35_000, "STB": 28_000,
+    "TCB": 30_000, "TPB": 25_000, "MBB": 32_000, "SBV": 22_000,
+    "VCB": 72_000, "HDB": 45_000, "CTG": 26_000, "ALF": 18_000,
+    "MSN": 38_000, "SSH": 15_000, "KDC": 20_000, "HPG": 32_000,
+    "HSG": 15_000, "NLG": 28_000, "PDR": 12_000, "PNJ": 52_000,
+    "PVD": 18_000, "SAB": 48_000, "SJS": 45_000, "SSB": 22_000,
+    "TCH": 30_000, "VJC": 95_000,
 }
 
 
@@ -345,7 +345,7 @@ def populate_market_data(symbols: list[str], days: int = 30) -> dict:
     for idx, symbol in enumerate(symbols, 1):
         try:
             is_primary = symbol in primary
-            base_price = SYMBOL_BASE_PRICES.get(symbol, 35.0)
+            base_price = SYMBOL_BASE_PRICES.get(symbol, 35_000)
             
             # Try real data for primary symbols
             if is_primary:
@@ -415,17 +415,17 @@ def seed_data():
         # 2. Insert sample transactions
         transactions = [
             # Giao dịch mua VNM
-            (user_id, "VNM", "BUY", 100, 85.5, datetime.now() - timedelta(days=30), "Mua VNM"),
-            (user_id, "VNM", "BUY", 50, 86.0, datetime.now() - timedelta(days=20), "Mua thêm VNM"),
-            (user_id, "VNM", "SELL", 30, 87.5, datetime.now() - timedelta(days=10), "Bán 1 phần"),
+            (user_id, "VNM", "BUY", 100, 85_500, datetime.now() - timedelta(days=30), "Mua VNM"),
+            (user_id, "VNM", "BUY", 50, 86_000, datetime.now() - timedelta(days=20), "Mua thêm VNM"),
+            (user_id, "VNM", "SELL", 30, 87_500, datetime.now() - timedelta(days=10), "Bán 1 phần"),
             
             # Giao dịch mua ACB
-            (user_id, "ACB", "BUY", 200, 24.5, datetime.now() - timedelta(days=25), "Mua ACB"),
-            (user_id, "ACB", "BUY", 100, 24.8, datetime.now() - timedelta(days=15), "Mua thêm ACB"),
+            (user_id, "ACB", "BUY", 200, 24_500, datetime.now() - timedelta(days=25), "Mua ACB"),
+            (user_id, "ACB", "BUY", 100, 24_800, datetime.now() - timedelta(days=15), "Mua thêm ACB"),
             
             # Giao dịch mua BID
-            (user_id, "BID", "BUY", 50, 42.0, datetime.now() - timedelta(days=20), "Mua BID"),
-            (user_id, "BID", "SELL", 20, 43.5, datetime.now() - timedelta(days=5), "Bán BID"),
+            (user_id, "BID", "BUY", 50, 42_000, datetime.now() - timedelta(days=20), "Mua BID"),
+            (user_id, "BID", "SELL", 20, 43_500, datetime.now() - timedelta(days=5), "Bán BID"),
         ]
         
         cursor.executemany("""
@@ -437,11 +437,11 @@ def seed_data():
         
         # 3. Insert sample price alerts
         alerts = [
-            (user_id, "VNM", 90.0, "GREATER_THAN_OR_EQUAL", "TAKE_PROFIT"),
-            (user_id, "VNM", 80.0, "LESS_THAN_OR_EQUAL", "STOP_LOSS"),
-            (user_id, "ACB", 26.0, "GREATER_THAN_OR_EQUAL", "TAKE_PROFIT"),
-            (user_id, "ACB", 23.0, "LESS_THAN_OR_EQUAL", "STOP_LOSS"),
-            (user_id, "BID", 45.0, "GREATER_THAN_OR_EQUAL", "TAKE_PROFIT"),
+            (user_id, "VNM", 90_000, "GREATER_THAN_OR_EQUAL", "TAKE_PROFIT"),
+            (user_id, "VNM", 80_000, "LESS_THAN_OR_EQUAL", "STOP_LOSS"),
+            (user_id, "ACB", 26_000, "GREATER_THAN_OR_EQUAL", "TAKE_PROFIT"),
+            (user_id, "ACB", 23_000, "LESS_THAN_OR_EQUAL", "STOP_LOSS"),
+            (user_id, "BID", 45_000, "GREATER_THAN_OR_EQUAL", "TAKE_PROFIT"),
         ]
         
         cursor.executemany("""
